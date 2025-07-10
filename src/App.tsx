@@ -8,17 +8,17 @@ import { MessageSquare } from 'lucide-react';
 
 function App() {
   const {
-    getCurrentPageTweets,
+    tweets, // Now directly returns paginated and ordered tweets
     copyTweet,
     isTweetCopied,
     currentPage,
     setCurrentPage,
     getTotalPages,
-    getStats // getStats is still called but its result is not passed to Dashboard
+    getStats, // getStats is still called but its result is not passed to Dashboard
+    loadingCopied // Use loading state
   } = useTweets();
 
   const stats = getStats(); // Stats are still calculated but not displayed in the dashboard area
-  const tweets = getCurrentPageTweets();
   const totalPages = getTotalPages();
 
   return (
@@ -43,6 +43,11 @@ function App() {
         <InfoBanner />
 
         {/* Dashboard component removed */}
+
+        {/* Loading indicator for copied status */}
+        {loadingCopied && (
+          <div className="text-center text-white/60 mb-4">Loading copied status...</div>
+        )}
 
         {/* Tweets Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
