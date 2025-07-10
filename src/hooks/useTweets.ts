@@ -9,8 +9,29 @@ interface Tweet {
   timestamp: string;
 }
 
+// Fisher-Yates (Knuth) Shuffle Algorithm
+const shuffleArray = (array: Tweet[]) => {
+  let currentIndex = array.length, randomIndex;
+
+  // While there remain elements to shuffle.
+  while (currentIndex !== 0) {
+
+    // Pick a remaining element.
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+
+    // And swap it with the current element.
+    [array[currentIndex], array[randomIndex]] = [
+      array[randomIndex], array[currentIndex]];
+  }
+
+  return array;
+};
+
+
 export const useTweets = () => {
-  const [tweets] = useState<Tweet[]>(tweetsData);
+  // Shuffle tweetsData when the hook is initialized
+  const [tweets] = useState<Tweet[]>(() => shuffleArray([...tweetsData]));
   const [copiedTweets, setCopiedTweets] = useState<number[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const tweetsPerPage = 50;
@@ -22,10 +43,10 @@ export const useTweets = () => {
     };
 
     updateCopiedTweets();
-    
+
     // Update every minute to handle expiration
     const interval = setInterval(updateCopiedTweets, 60000);
-    
+
     return () => clearInterval(interval);
   }, []);
 
@@ -51,13 +72,13 @@ export const useTweets = () => {
 
   const getStats = () => {
     const today = new Date().toISOString().split('T')[0];
-    const todayTweets = tweets.filter(tweet => 
+    const todayTweets = tweets.filter(tweet =>
       tweet.timestamp.startsWith(today)
     );
-    
+
     const uniqueAuthors = new Set(todayTweets.map(tweet => tweet.author)).size;
     const totalCopied = copiedTweets.length;
-    
+
     return {
       totalTweets: tweets.length,
       todayTweets: todayTweets.length,
