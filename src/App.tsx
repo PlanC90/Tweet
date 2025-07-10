@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTweets } from './hooks/useTweets';
-import Dashboard from './components/Dashboard';
+// Removed Dashboard import as it is no longer used
 import TweetCard from './components/TweetCard';
 import Pagination from './components/Pagination';
 import InfoBanner from './components/InfoBanner';
@@ -14,20 +14,22 @@ function App() {
     currentPage,
     setCurrentPage,
     getTotalPages,
-    getStats
+    getStats // getStats is still called but its result is not passed to Dashboard
   } = useTweets();
 
-  const stats = getStats();
+  const stats = getStats(); // Stats are still calculated but not displayed in the dashboard area
   const tweets = getCurrentPageTweets();
   const totalPages = getTotalPages();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
+    // Changed background gradient to a dark theme
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-3 mb-4">
-            <div className="p-3 bg-white/20 backdrop-blur-lg rounded-xl border border-white/30">
+            {/* Updated header icon container for dark theme */}
+            <div className="p-3 bg-gray-800/50 backdrop-blur-lg rounded-xl border border-gray-700">
               <MessageSquare className="h-8 w-8 text-white" />
             </div>
             <h1 className="text-4xl font-bold text-white">Tweet Manager</h1>
@@ -40,8 +42,7 @@ function App() {
         {/* Info Banner */}
         <InfoBanner />
 
-        {/* Dashboard */}
-        <Dashboard stats={stats} />
+        {/* Dashboard component removed */}
 
         {/* Tweets Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
