@@ -4,5 +4,6 @@
 
 /* Add a dark background to the body */
 body {
-  background-color: #1a202c; /* A dark shade of gray/black */
+  /* Changed to a very dark gray */
+  background-color: #121212;
 }
