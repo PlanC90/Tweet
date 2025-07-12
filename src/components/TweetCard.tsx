@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import { Copy, Check, Clock } from 'lucide-react';
-// Removed local storage utils
-// import { storageUtils } from '../utils/storage';
 
 interface Tweet {
   id: number;
@@ -12,7 +10,7 @@ interface Tweet {
 
 interface TweetCardProps {
   tweet: Tweet;
-  isCopied: boolean; // This now comes from the shared Supabase state
+  isCopied: boolean;
   onCopy: (tweet: Tweet) => Promise<boolean>;
 }
 
@@ -37,7 +35,6 @@ const TweetCard: React.FC<TweetCardProps> = ({ tweet, isCopied, onCopy }) => {
   };
 
   const formatTimestamp = (timestamp: string) => {
-    // Use a more robust date parsing if timestamp format varies
     try {
       return new Date(timestamp).toLocaleTimeString('en-US', {
         hour: '2-digit',
@@ -49,19 +46,8 @@ const TweetCard: React.FC<TweetCardProps> = ({ tweet, isCopied, onCopy }) => {
     }
   };
 
-  // Removed getCopyInfo as local expiration is no longer relevant
-  // const getCopyInfo = () => {
-  //   const copyInfo = storageUtils.getTweetCopyInfo(tweet.id);
-  //   if (!copyInfo) return null;
-
-  //   const timeLeft = copyInfo.expiresAt - Date.now();
-  //   const hoursLeft = Math.ceil(timeLeft / (1000 * 60 * 60));
-
-  //   return `Available in ${hoursLeft}h`;
-  // };
-
   return (
-    <div className={`bg-white/20 backdrop-blur-lg rounded-xl p-6 border border-white/30 hover:bg-white/30 transition-all duration-300 ${isCopied ? 'opacity-50' : ''}`}>
+    <div className="bg-white/20 backdrop-blur-lg rounded-xl p-6 border border-white/30 hover:bg-white/30 transition-all duration-300">
       <div className="flex justify-between items-start mb-4">
         <div className="text-white/60 text-xs">
           {formatTimestamp(tweet.timestamp)}
@@ -71,10 +57,12 @@ const TweetCard: React.FC<TweetCardProps> = ({ tweet, isCopied, onCopy }) => {
           onClick={handleCopy}
           disabled={isCopied || isLoading}
           className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 ${
-            isCopied
+            isLoading
               ? 'bg-gray-500/50 text-gray-300 cursor-not-allowed'
               : showSuccess
               ? 'bg-green-500 text-white'
+              : isCopied
+              ? 'bg-gray-500/50 text-gray-300 cursor-not-allowed opacity-70' // Added opacity for faded look
               : 'bg-blue-500 hover:bg-blue-600 text-white hover:scale-105'
           }`}
         >
@@ -83,7 +71,6 @@ const TweetCard: React.FC<TweetCardProps> = ({ tweet, isCopied, onCopy }) => {
           ) : showSuccess ? (
             <Check className="h-4 w-4" />
           ) : isCopied ? (
-            // Use Clock icon for copied state
             <Clock className="h-4 w-4" />
           ) : (
             <Copy className="h-4 w-4" />
@@ -97,14 +84,6 @@ const TweetCard: React.FC<TweetCardProps> = ({ tweet, isCopied, onCopy }) => {
       <div className="text-white text-sm leading-relaxed whitespace-pre-wrap">
         {tweet.text}
       </div>
-
-      {/* Removed local expiration info display */}
-      {/* {isCopied && (
-        <div className="mt-3 text-xs text-yellow-300 flex items-center space-x-1">
-          <Clock className="h-3 w-3" />
-          <span>{getCopyInfo()}</span>
-        </div>
-      )} */}
     </div>
   );
 };
