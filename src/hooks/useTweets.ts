@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import tweetsData from '../data/tweets.json';
-// Removed local storage utils as we'll use Supabase
-// import { storageUtils } from '../utils/storage';
-import { supabase } from '../supabaseClient';
+// Supabase import is no longer needed
+// import { supabase } from '../supabaseClient';
+// User type is no longer needed
+// import { User } from '@supabase/supabase-js';
 
 interface Tweet {
   id: number;
@@ -31,75 +32,80 @@ const shuffleArray = (array: Tweet[]) => {
   return shuffledArray;
 };
 
+// Key for local storage
+const LOCAL_STORAGE_KEY = 'copiedTweetIds';
 
 export const useTweets = () => {
-  // Shuffle tweetsData when the hook is initialized
-  const [allTweets] = useState<Tweet[]>(() => shuffleArray([...tweetsData]));
-  const [copiedTweetIds, setCopiedTweetIds] = useState<number[]>([]);
+  // User state and related effects removed
+  // const [user, setUser] = useState<User | null>(null);
+  // const [loadingUser, setLoadingUser] = useState(true);
+
+  // Initialize allTweets defensively, ensuring tweetsData is an array
+  const [allTweets] = useState<Tweet[]>(() => {
+    // Check if tweetsData is an array before spreading and shuffling
+    const dataToShuffle = Array.isArray(tweetsData) ? tweetsData : [];
+    return shuffleArray([...dataToShuffle]);
+  });
+
+  // Initialize copiedTweetIds from local storage
+  const [copiedTweetIds, setCopiedTweetIds] = useState<number[]>(() => {
+    try {
+      const storedIds = localStorage.getItem(LOCAL_STORAGE_KEY);
+      // Ensure parsed data is an array, default to empty array if null or not array
+      const parsedIds = storedIds ? JSON.parse(storedIds) : null;
+      return Array.isArray(parsedIds) ? parsedIds : [];
+    } catch (error) {
+      console.error("Error reading from localStorage", error);
+      return [];
+    }
+  });
+
   const [currentPage, setCurrentPage] = useState(1);
   const tweetsPerPage = 50;
-  const [loadingCopied, setLoadingCopied] = useState(true);
+  // loadingCopied state is no longer needed as we use local storage
+  const [loadingCopied, setLoadingCopied] = useState(false); // Set to false as no async fetch
 
-  const fetchCopiedTweets = useCallback(async () => {
-    setLoadingCopied(true);
-    const { data, error } = await supabase
-      .from('copied_tweets')
-      .select('tweet_id');
+  // Effect to get the initial user session and listen for auth changes - REMOVED
+  // useEffect(() => { ... }, []);
 
-    if (error) {
-      console.error('Error fetching copied tweets:', error);
-      // Optionally handle error state in UI
-    } else {
-      setCopiedTweetIds(data.map(item => item.tweet_id));
-    }
-    setLoadingCopied(false);
-  }, []);
+  // Fetch copied tweets for the current user whenever the user changes - REMOVED
+  // const fetchCopiedTweets = useCallback(async () => { ... }, [user]);
 
+  // Effect to fetch copied tweets on mount (or user change) - MODIFIED for localStorage
   useEffect(() => {
-    fetchCopiedTweets();
+    // No need to fetch from Supabase, state is initialized from localStorage
+    // The initial state setter already handles reading from localStorage
+    // This effect can be used for other side effects if needed, but not for fetching copied state
+    setLoadingCopied(false); // Ensure loading is false after initial state setup
+  }, []); // Empty dependency array means this runs once on mount
 
-    // Optional: Set up real-time subscription for instant updates
-    // const subscription = supabase
-    //   .from('copied_tweets')
-    //   .on('*', payload => {
-    //     console.log('Change received!', payload);
-    //     fetchCopiedTweets(); // Refetch when changes occur
-    //   })
-    //   .subscribe();
-
-    // return () => {
-    //   supabase.removeSubscription(subscription);
-    // };
-
-  }, [fetchCopiedTweets]); // Depend on fetchCopiedTweets
+  // Effect to save copiedTweetIds to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(copiedTweetIds));
+    } catch (error) {
+      console.error("Error writing to localStorage", error);
+    }
+  }, [copiedTweetIds]); // Depend on copiedTweetIds state
 
   const copyTweet = async (tweet: Tweet) => {
+    // No user check needed
+
     try {
       // Copy to clipboard
       await navigator.clipboard.writeText(tweet.text);
 
-      // Mark as copied in Supabase
-      const { error } = await supabase
-        .from('copied_tweets')
-        .insert([{ tweet_id: tweet.id }]);
-
-      if (error) {
-        console.error('Error marking tweet as copied in Supabase:', error);
-        // If it's a unique constraint error (already copied), it's fine.
-        // Otherwise, you might want to show an error to the user.
-        // For now, we'll just log it.
-        if (error.code !== '23505') { // 23505 is unique_violation
-             // Handle other errors if necessary
-             return false; // Indicate failure if not a unique violation
-        }
+      // Update local state immediately
+      // Add the tweet ID to the copiedTweetIds array if it's not already there
+      if (!copiedTweetIds.includes(tweet.id)) {
+         setCopiedTweetIds(prevIds => [...prevIds, tweet.id]);
       }
 
-      // Update local state by refetching from Supabase
-      await fetchCopiedTweets();
+      // No Supabase interaction needed here
 
       return true; // Indicate success
     } catch (error) {
-      console.error('Failed to copy tweet or update Supabase:', error);
+      console.error('Failed to copy tweet or update local storage:', error);
       return false; // Indicate failure
     }
   };
@@ -107,7 +113,13 @@ export const useTweets = () => {
   const getTotalPages = () => Math.ceil(allTweets.length / tweetsPerPage);
 
   const getCurrentPageTweets = () => {
-    // Separate tweets into copied and uncopied based on Supabase data
+    // Add a defensive check for allTweets being an array before filtering
+    if (!Array.isArray(allTweets)) {
+        console.error("allTweets is not an array when getCurrentPageTweets is called:", allTweets);
+        return []; // Return an empty array to prevent the error
+    }
+
+    // Separate tweets into copied (locally) and uncopied
     const uncopiedTweets = allTweets.filter(tweet => !copiedTweetIds.includes(tweet.id));
     const copiedTweets = allTweets.filter(tweet => copiedTweetIds.includes(tweet.id));
 
@@ -121,15 +133,25 @@ export const useTweets = () => {
   };
 
   const getStats = () => {
-    // Stats logic can remain, but might need adjustment if based on *all* tweets vs displayed tweets
-    // For now, keep it based on allTweets for consistency with previous version
+    // Add a defensive check for allTweets being an array before filtering
+    if (!Array.isArray(allTweets)) {
+        console.error("allTweets is not an array when getStats is called:", allTweets);
+        return {
+            totalTweets: 0,
+            todayTweets: 0,
+            uniqueAuthors: 0,
+            totalCopied: copiedTweetIds.length // totalCopied can still be calculated from local storage
+        };
+    }
+
     const today = new Date().toISOString().split('T')[0];
     const todayTweets = allTweets.filter(tweet =>
       tweet.timestamp.startsWith(today)
     );
 
     const uniqueAuthors = new Set(todayTweets.map(tweet => tweet.author)).size;
-    const totalCopied = copiedTweetIds.length; // Use Supabase data for total copied
+    // Total copied is now based on the local storage state
+    const totalCopied = copiedTweetIds.length;
 
     return {
       totalTweets: allTweets.length,
@@ -141,7 +163,7 @@ export const useTweets = () => {
 
   return {
     tweets: getCurrentPageTweets(), // Return paginated and ordered tweets
-    copiedTweetIds, // Return the list of copied IDs
+    copiedTweetIds, // Return the list of copied IDs (from local storage)
     currentPage,
     setCurrentPage,
     tweetsPerPage,
@@ -149,6 +171,9 @@ export const useTweets = () => {
     getTotalPages,
     getStats,
     isTweetCopied: (id: number) => copiedTweetIds.includes(id),
-    loadingCopied // Expose loading state if needed in UI
+    loadingCopied, // Still expose, but it will be false quickly
+    // user and loadingUser are removed
+    // user: null,
+    // loadingUser: false
   };
 };
